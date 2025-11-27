@@ -39,7 +39,7 @@ def preprocess_image(path):
 
 if __name__ == "__main__":
     #testing 
-    test_img = Path(__file__).resolve().parents[1] / "data" / "orion2.jpg"
+    test_img = Path(__file__).resolve().parents[1] / "data" / "orion2.png"
 
     print(f"Testing preprocessing on: {test_img}")
     processed = preprocess_image(test_img)
