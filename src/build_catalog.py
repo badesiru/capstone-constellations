@@ -1,26 +1,81 @@
-
-import pandas as pd
-from pathlib import Path
 import numpy as np
+import pandas as pd
 
-from project_catalog import load_constellation, project_constellation
 from parse_stellarium import build_catalog_from_stellarium
 
 
-#keeps only the brightest n stars - lowest magnitude is the brightest
-def filter_bright_stars(df, max_mag=4.5, top_n=8):
+def project_radec(ra, dec):
 
-    df = df.dropna(subset=["mag"])
-    df = df[df["mag"] <= max_mag]
-    df = df.sort_values(by="mag")  
-    return df.head(top_n)
+    ra_rad = np.radians(ra)
+    dec_rad = np.radians(dec)
 
-def build_catalog_shapes(max_mag=None):
-    catalog = build_catalog_from_stellarium(
+    x = np.cos(dec_rad) * np.cos(ra_rad)
+    y = np.cos(dec_rad) * np.sin(ra_rad)
+
+    coords = np.column_stack((x, y))
+
+
+    coords -= coords.mean(axis=0)
+
+
+    dists = np.linalg.norm(coords, axis=1)
+    maxd = np.max(dists) if dists.size > 0 else 0.0
+    if maxd > 0:
+        coords /= maxd
+
+    return coords
+
+
+def build_catalog_shapes(top_n=12):
+
+    raw_catalog = build_catalog_from_stellarium(
         index_path=r"C:\Program Files\Stellarium\skycultures\modern_iau\index.json",
         hyg_path="data/hyg/hyg_v38.csv.gz"
     )
-    return catalog
+
+    catalog_shapes = {}
+
+    for const_name, stars in raw_catalog.items():
+
+        if stars.shape[0] == 0:
+            continue
+
+        hips = stars[:, 0]
+        ra   = stars[:, 1]
+        dec  = stars[:, 2]
+        mags = stars[:, 3]
+
+
+        valid = ~np.isnan(mags)
+        if not np.any(valid):
+            continue
+
+        ra   = ra[valid]
+        dec  = dec[valid]
+        mags = mags[valid]
+
+        if ra.size == 0:
+            continue
+
+
+        order = np.argsort(mags)
+        k = min(top_n, order.size)
+        sel = order[:k]
+
+        ra_sel   = ra[sel]
+        dec_sel  = dec[sel]
+        mags_sel = mags[sel] 
+
+        coords = project_radec(ra_sel, dec_sel)
+
+        if coords.size == 0 or np.isnan(coords).any():
+            continue
+
+        catalog_shapes[const_name] = coords
+
+    return catalog_shapes
+
 
 if __name__ == "__main__":
-    build_catalog_shapes()
+    catalog = build_catalog_shapes()
+    print("Built shapes for", len(catalog), "constellations")

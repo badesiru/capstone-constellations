@@ -6,7 +6,7 @@ from match_constellation import match_constellation
 
 
 def main():
-    #building 88 constellation catalog from Stellarium + HYG
+
     stell_path = r"C:\Program Files\Stellarium\skycultures\modern_iau\index.json"
     hyg_path = r"data/hyg/hyg_v38.csv.gz"
 
@@ -14,7 +14,6 @@ def main():
     catalog = build_catalog_from_stellarium(stell_path, hyg_path)
     print(f"   Loaded {len(catalog)} constellations from catalog.\n")
 
-    #test constelatioins
     test_consts = ["Ori", "Cas", "UMa", "Tau", "Sco", "Cyg"]
 
     total = len(test_consts)

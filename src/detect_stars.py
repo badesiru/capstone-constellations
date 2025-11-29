@@ -2,10 +2,35 @@ import cv2
 import numpy as np
 from pathlib import Path
 
-def detect_stars(processed_img):
- 
 
-    #adaptive threshold for uneven background
+
+
+
+def detect_stars(processed_img, synthetic=False):
+
+        _, thresh = cv2.threshold(processed_img, 30, 255, cv2.THRESH_BINARY)
+
+        contours, _ = cv2.findContours(
+            thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE
+        )
+
+        star_points = []
+
+        for c in contours:
+            area = cv2.contourArea(c)
+            if area < 3:
+                continue
+
+            M = cv2.moments(c)
+            if M["m00"] == 0:
+                continue
+
+            cx = int(M["m10"] / M["m00"])
+            cy = int(M["m01"] / M["m00"])
+            star_points.append((cx, cy))
+
+        return star_points
+
     thresh = cv2.adaptiveThreshold(
         processed_img,
         255,
@@ -15,23 +40,21 @@ def detect_stars(processed_img):
         2
     )
 
-    #taking out noise
     kernel = np.ones((3, 3), np.uint8)
     clean = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
 
-    #finding contours
     contours, _ = cv2.findContours(clean, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     star_points = []
     star_brightness = []
 
-    #brightness threshold percentiles
-    bright_thresh = np.percentile(processed_img, 99)  
+
+    bright_thresh = np.percentile(processed_img, 99)
 
     for c in contours:
         area = cv2.contourArea(c)
 
-        take out tiny specs and huge blobs
+
         if area < 20 or area > 2000:
             continue
 
@@ -42,7 +65,6 @@ def detect_stars(processed_img):
         cx = int(M["m10"] / M["m00"])
         cy = int(M["m01"] / M["m00"])
 
-        #britghess in center of detected star
         b = processed_img[cy, cx]
         if b < bright_thresh:
             continue
@@ -50,7 +72,6 @@ def detect_stars(processed_img):
         star_points.append((cx, cy))
         star_brightness.append(b)
 
-    #keeping only top 15 brightest detecitons
     if len(star_points) > 15:
         zipped = list(zip(star_points, star_brightness))
         zipped.sort(key=lambda x: x[1], reverse=True)
@@ -58,6 +79,30 @@ def detect_stars(processed_img):
 
     return star_points
 
+
+def detect_stars_synthetic(img):
+
+    _, th = cv2.threshold(img, 30, 255, cv2.THRESH_BINARY)
+
+
+    contours, _ = cv2.findContours(th, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+    star_points = []
+    for c in contours:
+        area = cv2.contourArea(c)
+        if area < 20 or area > 5000:
+            continue
+
+        M = cv2.moments(c)
+        if M["m00"] == 0:
+            continue
+
+        cx = int(M["m10"] / M["m00"])
+        cy = int(M["m01"] / M["m00"])
+
+        star_points.append((cx, cy))
+
+    return star_points
 
 
 if __name__ == "__main__":
@@ -67,6 +112,3 @@ if __name__ == "__main__":
     stars = detect_stars(img)
     print(f"Detected {len(stars)} stars")
     print(stars)
-
-
-

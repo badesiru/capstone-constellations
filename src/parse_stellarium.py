@@ -43,12 +43,12 @@ def build_catalog_from_stellarium(index_path, hyg_path):
         if stars.empty:
             continue
 
-        coords = np.vstack([
+        catalog[abbr] = np.vstack([
+            stars["hip"].values,
             stars["ra"].values,
-            stars["dec"].values
+            stars["dec"].values,
+            stars["mag"].values
         ]).T
-
-        catalog[abbr] = coords
 
     return catalog
 
