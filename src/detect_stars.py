@@ -2,12 +2,8 @@ import cv2
 import numpy as np
 from pathlib import Path
 
-
-
-
-
 def detect_stars(processed_img, synthetic=False):
-
+    if synthetic:
         _, thresh = cv2.threshold(processed_img, 30, 255, cv2.THRESH_BINARY)
 
         contours, _ = cv2.findContours(

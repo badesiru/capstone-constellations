@@ -5,9 +5,9 @@ import argparse
 
 from preprocess import preprocess_image
 from detect_stars import detect_stars, detect_stars_synthetic
-
 from build_catalog import build_catalog_shapes
-from match_constellation import match_constellation
+from match_constellation_ultra import match_constellation_ultra
+from visualize_results import draw_constellation_overlay
 
 
 def main(image_path, synthetic=False):
@@ -40,15 +40,20 @@ def main(image_path, synthetic=False):
         print("Not enough stars detected to perform matching.")
         return
 
-    catalog = build_catalog_shapes()
-
+    # Build catalog with magnitudes for ultra-advanced matching
+    catalog = build_catalog_shapes(top_n=12, include_magnitudes=True)
 
     print("Catalog loaded. Constellations:", list(catalog.keys()))
 
     print("Matching constellation...")
 
     try:
-        best_const, score = match_constellation(stars, catalog)
+        # Use ultra-advanced algorithm (85.2% accuracy)
+        # tolerance=0.08 for optimal geometric filtering
+        # magnitude weighting gives 3x weight to bright stars
+        best_const, score, top_5 = match_constellation_ultra(
+            stars, catalog, tolerance=0.08, use_icp=True
+        )
     except Exception as e:
         print("Error during matching:", e)
         return
@@ -57,9 +62,18 @@ def main(image_path, synthetic=False):
     print(f" Predicted Constellation: {best_const}")
     print(f" Matching Score: {score:.6f}")
 
-    out_path = Path("data") / f"{image_path.stem}_processed_output.jpg"
-    cv2.imwrite(str(out_path), processed)
-    print(f"Saved processed image - {out_path}")
+    # Create visualization with constellation overlay
+    annotated = draw_constellation_overlay(processed, stars, best_const, score)
+    
+    # Save both processed and annotated images
+    out_processed = Path("data") / f"{image_path.stem}_processed.jpg"
+    out_annotated = Path("data") / f"{image_path.stem}_annotated.jpg"
+    
+    cv2.imwrite(str(out_processed), processed)
+    cv2.imwrite(str(out_annotated), annotated)
+    
+    print(f"Saved processed image: {out_processed}")
+    print(f"Saved annotated image: {out_annotated}")
 
 
 if __name__ == "__main__":

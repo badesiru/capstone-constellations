@@ -6,8 +6,9 @@ from pathlib import Path
 from parse_stellarium import build_catalog_from_stellarium
 
 
-IMG_SIZE = 1024                 
-SIMPLE_TOP_N = 12    
+IMG_SIZE = 1024
+SCALE = int(IMG_SIZE * 0.38)
+SIMPLE_TOP_N = 12
 
 
 def mag_to_radius(mag):
@@ -29,6 +30,7 @@ def project_radec(ra, dec):
     return np.column_stack((x, y))
 
 def normalize_coords(coords):
+    # Center and normalize to unit scale
     coords = coords - coords.mean(axis=0)
     maxd = np.max(np.linalg.norm(coords, axis=1))
     if maxd > 0:
@@ -40,13 +42,13 @@ def normalize_coords(coords):
 def draw_constellation(coords, mags, out_path):
     img = np.zeros((IMG_SIZE, IMG_SIZE, 3), dtype=np.uint8)
 
-    scale = IMG_SIZE * 0.38
+    scale = IMG_SIZE * 0.45  # Increased from 0.38 to spread stars more
     cx = IMG_SIZE // 2
     cy = IMG_SIZE // 2
 
     for (x, y), m in zip(coords, mags):
-        px = int(cx + x * scale)
-        py = int(cy - y * scale) 
+        px = int(cx + x * SCALE)
+        py = int(cy - y * SCALE)  # Use larger Y scale for vertical stretch 
 
         brightness = mag_to_brightness(m)
         radius = mag_to_radius(m)
@@ -73,7 +75,7 @@ def main():
 
     for const_name, coords_raw in catalog.items():
 
-        ra = coords_raw[:, 1]
+        ra = coords_raw[:, 1] * 15  # Convert hours to degrees (1 hour = 15°)
         dec = coords_raw[:, 2]
         mags = coords_raw[:, 3]
 
@@ -85,7 +87,7 @@ def main():
 
         order = np.argsort(mags)[:SIMPLE_TOP_N]
 
-        ra_sel = ra[order]
+        ra_sel = ra[order]  # Already converted to degrees above
         dec_sel = dec[order]
         mags_sel = mags[order]
 

@@ -14,10 +14,9 @@ def project_radec(ra, dec):
 
     coords = np.column_stack((x, y))
 
-
+    # Center and normalize
     coords -= coords.mean(axis=0)
-
-
+    
     dists = np.linalg.norm(coords, axis=1)
     maxd = np.max(dists) if dists.size > 0 else 0.0
     if maxd > 0:
@@ -26,8 +25,15 @@ def project_radec(ra, dec):
     return coords
 
 
-def build_catalog_shapes(top_n=12):
-
+def build_catalog_shapes(top_n=12, include_magnitudes=False):
+    """
+    Build constellation catalog with optional magnitude information.
+    
+    Args:
+        top_n: Number of brightest stars to include per constellation
+        include_magnitudes: If True, return dict of {'coords': array, 'mags': array}
+                          If False, return just coords array (backward compatible)
+    """
     raw_catalog = build_catalog_from_stellarium(
         index_path=r"C:\Program Files\Stellarium\skycultures\modern_iau\index.json",
         hyg_path="data/hyg/hyg_v38.csv.gz"
@@ -41,7 +47,7 @@ def build_catalog_shapes(top_n=12):
             continue
 
         hips = stars[:, 0]
-        ra   = stars[:, 1]
+        ra   = stars[:, 1] * 15  # Convert hours to degrees (1 hour = 15°)
         dec  = stars[:, 2]
         mags = stars[:, 3]
 
@@ -71,9 +77,23 @@ def build_catalog_shapes(top_n=12):
         if coords.size == 0 or np.isnan(coords).any():
             continue
 
-        catalog_shapes[const_name] = coords
+        if include_magnitudes:
+            catalog_shapes[const_name] = {
+                'coords': coords,
+                'mags': mags_sel
+            }
+        else:
+            catalog_shapes[const_name] = coords
 
     return catalog_shapes
+
+
+def build_multiscale_catalogs():
+    """Build catalogs at multiple scales (8, 10, 12 stars) for adaptive matching."""
+    catalogs = {}
+    for n in [8, 10, 12]:
+        catalogs[n] = build_catalog_shapes(top_n=n)
+    return catalogs
 
 
 if __name__ == "__main__":
