@@ -35,6 +35,15 @@ def load_results():
     with open(results_path, 'r', encoding='utf-8') as f:
         return json.load(f)
 
+@st.cache_data
+def load_baseline_results():
+    baseline_path = Path("data/baseline_comparison.json")
+    if not baseline_path.exists():
+        return None
+    
+    with open(baseline_path, 'r', encoding='utf-8') as f:
+        return json.load(f)
+
 results = load_results()
 
 if results is None:
@@ -50,7 +59,7 @@ with st.sidebar:
     st.header("Navigation")
     page = st.radio(
         "Select View:",
-        ["Overview", "Correct Matches", "Incorrect Matches", "Detection Errors", "Performance Analysis"]
+        ["Overview", "Baseline Comparison", "Correct Matches", "Incorrect Matches", "Detection Errors", "Performance Analysis"]
     )
     
     st.markdown("---")
@@ -132,6 +141,94 @@ if page == "Overview":
         st.dataframe(top_df, width='stretch', hide_index=True)
     
     st.markdown("---")
+
+# Baseline Comparison Page
+elif page == "Baseline Comparison":
+    st.header("Baseline Algorithm Comparison")
+    
+    baseline_results = load_baseline_results()
+    
+    if baseline_results is None:
+        st.warning("⚠️ Baseline comparison not run yet!")
+        st.info("Run: `python src/evaluate_baselines.py` to generate comparison data")
+        st.stop()
+    
+    metadata = baseline_results['metadata']
+    
+    # Summary metrics
+    st.subheader("Accuracy based on the 83 testable constellations")
+    
+    col1, col2, col3 = st.columns(3)
+    
+    with col1:
+        st.markdown("#### Random Guessing")
+        st.metric("Accuracy", f"{metadata['theoretical_random_accuracy']:.1f}%", 
+                 help="Theoretical baseline: 1/88 chance")
+        st.caption("Naive baseline - picks random constellation")
+    
+    with col2:
+        st.markdown("#### Nearest-Neighbor")
+        st.metric("Accuracy", f"{metadata['nearest_neighbor_accuracy']:.1f}%",
+                 help="Simple centroid distance matching")
+        st.caption("No geometric filtering or magnitude weighting")
+    
+    with col3:
+        st.markdown("#### Ultra-Advanced (Ours)")
+        st.metric("Accuracy", f"{metadata['ultra_advanced_accuracy']:.1f}%",
+                 delta=f"+{metadata['ultra_advanced_accuracy'] - metadata['nearest_neighbor_accuracy']:.1f}pp",
+                 help="Magnitude weighting + ICP + geometric filtering")
+        st.caption("Current system with all optimizations")
+    
+    st.markdown("---")
+    
+    # Improvement metrics
+    st.subheader("Improvement Analysis")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.metric(
+            "Improvement over Random",
+            f"{metadata['improvement_over_random']:.1f}x",
+            help=f"{metadata['ultra_advanced_accuracy']:.1f}% / {metadata['theoretical_random_accuracy']:.1f}%"
+        )
+        st.caption(f"Ultra-advanced is **{metadata['improvement_over_random']:.1f}x better** than random guessing")
+    
+    with col2:
+        st.metric(
+            "Improvement over Nearest-Neighbor", 
+            f"{metadata['improvement_over_nn']:.1f}x" if metadata['improvement_over_nn'] else "N/A",
+            help=f"{metadata['ultra_advanced_accuracy']:.1f}% / {metadata['nearest_neighbor_accuracy']:.1f}%"
+        )
+        st.caption(f"Ultra-advanced is **{metadata['improvement_over_nn']:.1f}x better** than simple matching")
+    
+    st.markdown("---")
+    
+    # Technical details
+    with st.expander("📊 Technical Details"):
+        st.markdown("### Method Descriptions")
+        
+        st.markdown("**Random Guessing:**")
+        st.code("prediction = random.choice(all_88_constellations)", language="python")
+        st.caption("Theoretical baseline with 1/88 = 1.1% expected accuracy")
+        
+        st.markdown("**Nearest-Neighbor:**")
+        st.code("""# Simple centroid distance
+detected_centroid = mean(detected_stars)
+catalog_centroid = mean(catalog_stars)
+distance = euclidean(detected_centroid, catalog_centroid)
+prediction = constellation_with_min_distance""", language="python")
+        st.caption("Uses only centroid distance, no shape or brightness information")
+        
+        st.markdown("**Ultra-Advanced (Our System):**")
+        st.code("""# Multi-stage advanced matching
+1. Magnitude weighting (3x for bright stars)
+2. Geometric triangle invariants
+3. Distance histogram matching
+4. Radial distribution analysis  
+5. ICP refinement for alignment
+6. Tight tolerance filtering (0.08)""", language="python")
+        st.caption("Combines multiple sophisticated techniques for robust matching")
 
 # Correct Matches Page
 elif page == "Correct Matches":
@@ -277,7 +374,7 @@ elif page == "Performance Analysis":
     st.subheader("Performance Tiers")
     
     tier_data = {
-        'Tier': ['🌟 Excellent', '👍 Good', '⚠️ Fair'],
+        'Tier': ['Excellent', 'Good', 'Fair'],
         'RMSD Range': ['< 0.1', '0.1 - 0.5', '> 0.5'],
         'Count': [
             sum(1 for r in correct_rmsd if r < 0.1),
@@ -299,9 +396,9 @@ elif page == "Performance Analysis":
             title='Performance Tier Distribution',
             color='Tier',
             color_discrete_map={
-                '🌟 Excellent': '#28a745',
-                '👍 Good': '#ffc107',
-                '⚠️ Fair': '#dc3545'
+                'Excellent': '#28a745',
+                'Good': '#ffc107',
+                'Fair': '#dc3545'
             }
         )
         st.plotly_chart(fig, width='stretch')
