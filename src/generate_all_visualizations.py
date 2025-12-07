@@ -26,7 +26,7 @@ def main():
     
     # Load evaluation results
     if not RESULTS_FILE.exists():
-        print("❌ ERROR: evaluation_results.json not found!")
+        print("ERROR: evaluation_results.json not found!")
         print("Please run: python src/evaluate_all_constellations.py")
         return
     
@@ -123,10 +123,10 @@ def main():
     print("\n" + "=" * 70)
     print("SUMMARY")
     print("=" * 70)
-    print(f"✓ Correct:   {stats['correct_generated']}/{len(correct_list)}")
-    print(f"✗ Incorrect: {stats['incorrect_generated']}/{len(incorrect_list)}")
-    print(f"⚠ Errors:    {stats['errors_generated']}/{len(error_list)}")
-    print(f"❌ Failed:    {len(stats['failed'])}")
+    print(f"Correct:   {stats['correct_generated']}/{len(correct_list)}")
+    print(f"Incorrect: {stats['incorrect_generated']}/{len(incorrect_list)}")
+    print(f"Errors:    {stats['errors_generated']}/{len(error_list)}")
+    print(f"Failed:    {len(stats['failed'])}")
     print()
     print(f"All visualizations saved to: {OUTPUT_BASE}")
     print(f"  → {correct_dir}")
@@ -134,7 +134,7 @@ def main():
     print(f"  → {errors_dir}")
     
     if stats['failed']:
-        print(f"\n❌ Failed to generate: {', '.join(stats['failed'])}")
+        print(f"\nFailed to generate: {', '.join(stats['failed'])}")
 
 
 if __name__ == "__main__":

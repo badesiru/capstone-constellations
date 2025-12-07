@@ -149,7 +149,7 @@ elif page == "Baseline Comparison":
     baseline_results = load_baseline_results()
     
     if baseline_results is None:
-        st.warning("⚠️ Baseline comparison not run yet!")
+        st.warning("Baseline comparison not run yet!")
         st.info("Run: `python src/evaluate_baselines.py` to generate comparison data")
         st.stop()
     
@@ -240,7 +240,7 @@ elif page == "Correct Matches":
     # Get images
     correct_dir = Path("data/visualizations/correct")
     if not correct_dir.exists():
-        st.warning("⚠️ Visualization folder not found! Run: python src/generate_all_visualizations.py")
+        st.warning("Visualization folder not found! Run: python src/generate_all_visualizations.py")
     else:
         correct_imgs = sorted(correct_dir.glob("*_annotated.jpg"))
         

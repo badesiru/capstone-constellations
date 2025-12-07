@@ -149,7 +149,7 @@ def evaluate_all(use_multiscale=False):
     with open(output_file, 'w') as f:
         json.dump(results_serializable, f, indent=2)
     
-    print(f"\n✅ Full results saved to: {output_file}")
+    print(f"\nFull results saved to: {output_file}")
     
     return results
 
